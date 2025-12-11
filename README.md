@@ -32,10 +32,4 @@ python main.py
 - Click **Capture Frame** to freeze the current camera frame for OCR.
 - Use **Clear Output** to reset the extracted text panel.
 
-## Notes on the "100+ commits" request
-This environment cannot push or create 100 commits automatically. After you confirm functionality locally, you can generate commits yourself, e.g.:
-```bash
-for /l %i in (1,1,100) do git commit --allow-empty -m "checkpoint %i"
-```
-Push the resulting history to the GitHub repository `leandre000/Gui-Printed-Text-Scanner`.
 
