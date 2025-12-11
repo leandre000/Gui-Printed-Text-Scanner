@@ -2,41 +2,91 @@ import cv2
 import numpy as np
 import pytesseract
 import threading
-from tkinter import Tk, Frame, Canvas, Button, Label, Text, filedialog, messagebox, Scrollbar, RIGHT, Y, LEFT, BOTH, TOP, X
-from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+from tkinter import (
+    Tk,
+    Frame,
+    Canvas,
+    Text,
+    filedialog,
+    messagebox,
+    Scrollbar,
+    RIGHT,
+    Y,
+    BOTH,
+    LEFT,
+)
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 
 class OCRApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Printed Text Scanner")
-        self.root.geometry("1100x720")
+        self.root.geometry("1240x760")
+        self.root.configure(bg="#111827")
 
-        self.image_canvas = Canvas(self.root, width=720, height=520, bg="#1c1c1c", highlightthickness=1, highlightbackground="#444")
-        self.image_canvas.pack(side=TOP, padx=12, pady=8)
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TButton", padding=6, font=("Segoe UI", 10))
+        style.configure("Header.TLabel", font=("Segoe UI Semibold", 14), foreground="#f3f4f6", background="#111827")
+        style.configure("Subtle.TLabel", font=("Segoe UI", 9), foreground="#9ca3af", background="#111827")
+        style.configure("Panel.TFrame", background="#1f2937")
+        style.configure("Panel.TLabel", font=("Segoe UI", 10), foreground="#e5e7eb", background="#1f2937")
+        style.configure("Danger.TButton", background="#ef4444", foreground="#ffffff")
+        style.configure("Success.TButton", background="#22c55e", foreground="#ffffff")
 
-        controls = Frame(self.root)
-        controls.pack(side=TOP, fill=X, padx=12, pady=4)
+        header = ttk.Frame(self.root, style="Panel.TFrame", padding=(16, 12))
+        header.pack(fill="x")
+        ttk.Label(header, text="Printed Text Scanner", style="Header.TLabel").pack(anchor="w")
+        ttk.Label(header, text="Load image or use live camera, select ROI, and extract text with PyTesseract.", style="Subtle.TLabel").pack(anchor="w", pady=(2, 0))
 
-        Button(controls, text="Load Image", command=self.load_image, width=14).pack(side=LEFT, padx=4)
-        Button(controls, text="Start Camera", command=self.start_camera, width=14).pack(side=LEFT, padx=4)
-        Button(controls, text="Stop Camera", command=self.stop_camera, width=14).pack(side=LEFT, padx=4)
-        Button(controls, text="Capture Frame", command=self.capture_frame, width=14).pack(side=LEFT, padx=4)
-        Button(controls, text="Run OCR", command=self.run_ocr, width=14, bg="#4caf50", fg="white").pack(side=LEFT, padx=4)
-        Button(controls, text="Clear Output", command=self.clear_output, width=14).pack(side=LEFT, padx=4)
+        body = ttk.Frame(self.root, padding=12, style="Panel.TFrame")
+        body.pack(fill=BOTH, expand=True, padx=12, pady=12)
 
-        roi_hint = Label(self.root, text="Drag on the image to select ROI. OCR uses ROI if selected; otherwise full image.", fg="#555")
-        roi_hint.pack(side=TOP, pady=(0, 4))
+        left = ttk.Frame(body, padding=10, style="Panel.TFrame")
+        left.pack(side=LEFT, fill=BOTH, expand=True)
 
-        output_frame = Frame(self.root)
-        output_frame.pack(side=TOP, fill=BOTH, expand=True, padx=12, pady=(4, 8))
+        right = ttk.Frame(body, padding=10, style="Panel.TFrame")
+        right.pack(side=LEFT, fill=BOTH, expand=False)
 
-        Label(output_frame, text="Extracted Text").pack(anchor="w")
+        self.image_canvas = Canvas(left, width=860, height=540, bg="#0b1220", highlightthickness=1, highlightbackground="#374151")
+        self.image_canvas.pack(fill=BOTH, expand=True)
+
+        self.roi_label = ttk.Label(left, text="Tip: drag on the preview to set ROI. OCR uses ROI if present; otherwise full image.", style="Subtle.TLabel")
+        self.roi_label.pack(anchor="w", pady=(8, 0))
+
+        controls = ttk.Frame(right, padding=(0, 4), style="Panel.TFrame")
+        controls.pack(fill="x")
+
+        ttk.Label(controls, text="Capture & OCR", style="Panel.TLabel").pack(anchor="w", pady=(0, 6))
+        button_row1 = ttk.Frame(controls, style="Panel.TFrame")
+        button_row1.pack(fill="x", pady=2)
+        ttk.Button(button_row1, text="Load Image", command=self.load_image).pack(side=LEFT, padx=3)
+        ttk.Button(button_row1, text="Start Camera", command=self.start_camera).pack(side=LEFT, padx=3)
+        ttk.Button(button_row1, text="Stop Camera", command=self.stop_camera).pack(side=LEFT, padx=3)
+
+        button_row2 = ttk.Frame(controls, style="Panel.TFrame")
+        button_row2.pack(fill="x", pady=2)
+        ttk.Button(button_row2, text="Capture Frame", command=self.capture_frame).pack(side=LEFT, padx=3)
+        ttk.Button(button_row2, text="Run OCR", style="Success.TButton", command=self.run_ocr).pack(side=LEFT, padx=3)
+        ttk.Button(button_row2, text="Clear Output", command=self.clear_output).pack(side=LEFT, padx=3)
+
+        ttk.Label(controls, text="Quick Help", style="Panel.TLabel").pack(anchor="w", pady=(12, 4))
+        ttk.Label(controls, text="1) Load or start camera\n2) Drag ROI (optional)\n3) Capture frame to freeze\n4) Run OCR", style="Subtle.TLabel").pack(anchor="w")
+
+        output_frame = ttk.Frame(right, padding=(0, 8), style="Panel.TFrame")
+        output_frame.pack(fill=BOTH, expand=True, pady=(10, 0))
+
+        ttk.Label(output_frame, text="Extracted Text", style="Panel.TLabel").pack(anchor="w")
         scrollbar = Scrollbar(output_frame)
         scrollbar.pack(side=RIGHT, fill=Y)
-        self.output_text = Text(output_frame, height=10, wrap="word", yscrollcommand=scrollbar.set)
-        self.output_text.pack(fill=BOTH, expand=True)
+        self.output_text = Text(output_frame, height=18, wrap="word", yscrollcommand=scrollbar.set, font=("Consolas", 10), bg="#0f172a", fg="#e5e7eb", insertbackground="#e5e7eb", relief="flat")
+        self.output_text.pack(fill=BOTH, expand=True, pady=(4, 0))
         scrollbar.config(command=self.output_text.yview)
+
+        self.status_var = ttk.Label(self.root, text="Ready", anchor="w", padding=(12, 6), style="Subtle.TLabel")
+        self.status_var.pack(fill="x", side="bottom")
 
         self.current_image = None  # PIL image for display/processing
         self.display_tk_image = None
@@ -52,6 +102,8 @@ class OCRApp:
         self.image_canvas.bind("<B1-Motion>", self.on_mouse_drag)
         self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
 
+        self.set_status("Ready")
+
     # --------------------
     # UI helpers
     # --------------------
@@ -62,8 +114,10 @@ class OCRApp:
         try:
             image = Image.open(path).convert("RGB")
             self.set_image(image)
+            self.set_status(f"Loaded image: {path}")
         except Exception as exc:
             messagebox.showerror("Error", f"Failed to load image: {exc}")
+            self.set_status("Failed to load image")
 
     def set_image(self, image: Image.Image):
         self.current_image = image
@@ -135,6 +189,7 @@ class OCRApp:
         self.video_running = True
         self.video_thread = threading.Thread(target=self._camera_loop, daemon=True)
         self.video_thread.start()
+        self.set_status("Camera started")
 
     def _camera_loop(self):
         while self.video_running and self.video_capture and self.video_capture.isOpened():
@@ -150,6 +205,9 @@ class OCRApp:
 
     def stop_camera(self):
         self.video_running = False
+        if self.video_capture:
+            self.video_capture.release()
+        self.set_status("Camera stopped")
 
     def capture_frame(self):
         if self.current_image is None:
@@ -157,6 +215,7 @@ class OCRApp:
             return
         self.stop_camera()
         messagebox.showinfo("Captured", "Current camera frame captured for OCR.")
+        self.set_status("Frame captured and camera stopped")
 
     # --------------------
     # OCR
@@ -175,10 +234,13 @@ class OCRApp:
             overlay_img = self._draw_boxes_on_image(self.current_image, rectangles)
             scaled_rectangles = self._scale_boxes_to_display(rectangles, self.current_image.size)
             self.refresh_canvas(overlay_img, rectangles=scaled_rectangles)
+            self.set_status(f"OCR complete ({len(rectangles)} boxes)")
         except pytesseract.TesseractNotFoundError:
             messagebox.showerror("Tesseract Missing", "Tesseract executable not found. Please install it and set the PATH or update pytesseract.pytesseract.tesseract_cmd.")
+            self.set_status("Tesseract executable not found")
         except Exception as exc:
             messagebox.showerror("OCR Error", str(exc))
+            self.set_status("OCR failed")
 
     def _prepare_image_for_ocr(self, image: Image.Image) -> np.ndarray:
         np_img = np.array(image.convert("RGB"))
@@ -262,6 +324,10 @@ class OCRApp:
     # --------------------
     def clear_output(self):
         self.output_text.delete("1.0", "end")
+        self.set_status("Output cleared")
+
+    def set_status(self, text: str):
+        self.status_var.config(text=text)
 
 
 def main():

@@ -6,8 +6,8 @@ Tkinter-based printed text scanner that combines live camera capture, ROI select
 - Load images from disk or capture frames from the live camera.
 - Drag-to-select ROI; OCR uses ROI if set, otherwise the whole image.
 - One-click OCR with preprocessing (denoise + adaptive threshold).
-- Overlay preview of detected words on the image.
-- Extracted text displayed in a scrollable panel.
+- Overlay preview of detected words on the image plus live status updates.
+- Extracted text displayed in a scrollable, code-friendly panel.
 
 ## Prerequisites
 - Python 3.9+ recommended.
