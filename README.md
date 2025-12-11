@@ -3,11 +3,13 @@
 Tkinter-based printed text scanner that combines live camera capture, ROI selection, and PyTesseract OCR with an overlay preview of detected text.
 
 ## Features
+- Modern dark UI with sectional cards, quick-help, status bar, and live info badges.
 - Load images from disk or capture frames from the live camera.
-- Drag-to-select ROI; OCR uses ROI if set, otherwise the whole image.
+- Drag-to-select ROI; OCR uses ROI if set, otherwise the whole image (Reset ROI button).
 - One-click OCR with preprocessing (denoise + adaptive threshold).
-- Overlay preview of detected words on the image plus live status updates.
-- Extracted text displayed in a scrollable, code-friendly panel.
+- Overlay preview of detected words on the image plus live status updates and detection counts.
+- Extracted text displayed in a scrollable, code-friendly panel; copy or save text.
+- Keyboard shortcuts: Ctrl+O load, Ctrl+R OCR, Ctrl+Q quit, Space capture frame.
 
 ## Prerequisites
 - Python 3.9+ recommended.

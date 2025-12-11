@@ -14,6 +14,7 @@ from tkinter import (
     Y,
     BOTH,
     LEFT,
+    END,
 )
 from tkinter import ttk
 from PIL import Image, ImageTk
@@ -28,13 +29,18 @@ class OCRApp:
 
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TButton", padding=6, font=("Segoe UI", 10))
-        style.configure("Header.TLabel", font=("Segoe UI Semibold", 14), foreground="#f3f4f6", background="#111827")
+        style.configure("TButton", padding=8, font=("Segoe UI", 10), background="#1f2937", foreground="#e5e7eb")
+        style.map("TButton", background=[("active", "#2563eb")], foreground=[("active", "#ffffff")])
+        style.configure("Header.TLabel", font=("Segoe UI Semibold", 16), foreground="#f3f4f6", background="#111827")
         style.configure("Subtle.TLabel", font=("Segoe UI", 9), foreground="#9ca3af", background="#111827")
-        style.configure("Panel.TFrame", background="#1f2937")
+        style.configure("Panel.TFrame", background="#111827")
+        style.configure("Card.TFrame", background="#1f2937", relief="flat")
+        style.configure("CardHeading.TLabel", font=("Segoe UI Semibold", 11), foreground="#f3f4f6", background="#1f2937")
         style.configure("Panel.TLabel", font=("Segoe UI", 10), foreground="#e5e7eb", background="#1f2937")
-        style.configure("Danger.TButton", background="#ef4444", foreground="#ffffff")
-        style.configure("Success.TButton", background="#22c55e", foreground="#ffffff")
+        style.configure("Info.TLabel", font=("Segoe UI", 9), foreground="#9ca3af", background="#1f2937")
+        style.configure("Success.TButton", background="#16a34a", foreground="#ffffff")
+        style.configure("Primary.TButton", background="#2563eb", foreground="#ffffff")
+        style.configure("Ghost.TButton", background="#1f2937", foreground="#e5e7eb")
 
         header = ttk.Frame(self.root, style="Panel.TFrame", padding=(16, 12))
         header.pack(fill="x")
@@ -44,46 +50,89 @@ class OCRApp:
         body = ttk.Frame(self.root, padding=12, style="Panel.TFrame")
         body.pack(fill=BOTH, expand=True, padx=12, pady=12)
 
-        left = ttk.Frame(body, padding=10, style="Panel.TFrame")
+        left = ttk.Frame(body, padding=10, style="Card.TFrame")
         left.pack(side=LEFT, fill=BOTH, expand=True)
 
-        right = ttk.Frame(body, padding=10, style="Panel.TFrame")
+        right = ttk.Frame(body, padding=0, style="Panel.TFrame")
         right.pack(side=LEFT, fill=BOTH, expand=False)
 
-        self.image_canvas = Canvas(left, width=860, height=540, bg="#0b1220", highlightthickness=1, highlightbackground="#374151")
-        self.image_canvas.pack(fill=BOTH, expand=True)
+        ttk.Label(left, text="Live Preview & ROI", style="CardHeading.TLabel").pack(anchor="w", pady=(0, 8))
+
+        self.image_canvas = Canvas(left, width=880, height=560, bg="#0b1220", highlightthickness=1, highlightbackground="#374151")
+        self.image_canvas.pack(fill=BOTH, expand=True, pady=(0, 6))
 
         self.roi_label = ttk.Label(left, text="Tip: drag on the preview to set ROI. OCR uses ROI if present; otherwise full image.", style="Subtle.TLabel")
         self.roi_label.pack(anchor="w", pady=(8, 0))
 
-        controls = ttk.Frame(right, padding=(0, 4), style="Panel.TFrame")
-        controls.pack(fill="x")
+        # Right column with stacked cards
+        right_cards = ttk.Frame(right, style="Panel.TFrame")
+        right_cards.pack(fill=BOTH, expand=True)
 
-        ttk.Label(controls, text="Capture & OCR", style="Panel.TLabel").pack(anchor="w", pady=(0, 6))
-        button_row1 = ttk.Frame(controls, style="Panel.TFrame")
-        button_row1.pack(fill="x", pady=2)
-        ttk.Button(button_row1, text="Load Image", command=self.load_image).pack(side=LEFT, padx=3)
-        ttk.Button(button_row1, text="Start Camera", command=self.start_camera).pack(side=LEFT, padx=3)
-        ttk.Button(button_row1, text="Stop Camera", command=self.stop_camera).pack(side=LEFT, padx=3)
+        # Source card
+        source_card = ttk.Frame(right_cards, padding=12, style="Card.TFrame")
+        source_card.pack(fill="x", pady=(0, 8))
+        ttk.Label(source_card, text="Source & Control", style="CardHeading.TLabel").pack(anchor="w", pady=(0, 8))
+        row1 = ttk.Frame(source_card, style="Card.TFrame")
+        row1.pack(fill="x", pady=2)
+        ttk.Button(row1, text="Load Image (Ctrl+O)", style="Primary.TButton", command=self.load_image).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(row1, text="Start Camera", command=self.start_camera).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(row1, text="Stop", style="Ghost.TButton", command=self.stop_camera).pack(side=LEFT, padx=3, fill="x", expand=True)
 
-        button_row2 = ttk.Frame(controls, style="Panel.TFrame")
-        button_row2.pack(fill="x", pady=2)
-        ttk.Button(button_row2, text="Capture Frame", command=self.capture_frame).pack(side=LEFT, padx=3)
-        ttk.Button(button_row2, text="Run OCR", style="Success.TButton", command=self.run_ocr).pack(side=LEFT, padx=3)
-        ttk.Button(button_row2, text="Clear Output", command=self.clear_output).pack(side=LEFT, padx=3)
+        row2 = ttk.Frame(source_card, style="Card.TFrame")
+        row2.pack(fill="x", pady=2)
+        ttk.Button(row2, text="Capture Frame (Space)", command=self.capture_frame).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(row2, text="Reset ROI", command=self.clear_roi).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(row2, text="Clear Output", command=self.clear_output).pack(side=LEFT, padx=3, fill="x", expand=True)
 
-        ttk.Label(controls, text="Quick Help", style="Panel.TLabel").pack(anchor="w", pady=(12, 4))
-        ttk.Label(controls, text="1) Load or start camera\n2) Drag ROI (optional)\n3) Capture frame to freeze\n4) Run OCR", style="Subtle.TLabel").pack(anchor="w")
+        ttk.Separator(source_card, orient="horizontal").pack(fill="x", pady=8)
+        ttk.Label(source_card, text="Quick guide: Load or start camera → Drag ROI (optional) → Capture frame → Run OCR.", style="Info.TLabel").pack(anchor="w")
 
-        output_frame = ttk.Frame(right, padding=(0, 8), style="Panel.TFrame")
-        output_frame.pack(fill=BOTH, expand=True, pady=(10, 0))
+        # OCR card
+        ocr_card = ttk.Frame(right_cards, padding=12, style="Card.TFrame")
+        ocr_card.pack(fill="x", pady=(0, 8))
+        ttk.Label(ocr_card, text="OCR & Text Actions", style="CardHeading.TLabel").pack(anchor="w", pady=(0, 8))
+        ocr_row = ttk.Frame(ocr_card, style="Card.TFrame")
+        ocr_row.pack(fill="x", pady=2)
+        ttk.Button(ocr_row, text="Run OCR (Ctrl+R)", style="Success.TButton", command=self.run_ocr).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(ocr_row, text="Copy Text", command=self.copy_text).pack(side=LEFT, padx=3, fill="x", expand=True)
+        ttk.Button(ocr_row, text="Save Text", command=self.save_text).pack(side=LEFT, padx=3, fill="x", expand=True)
 
-        ttk.Label(output_frame, text="Extracted Text", style="Panel.TLabel").pack(anchor="w")
+        ttk.Label(ocr_card, text="Preprocessing: denoise + adaptive threshold. ROI is prioritized if set.", style="Info.TLabel").pack(anchor="w", pady=(6, 0))
+
+        # Output card
+        output_frame = ttk.Frame(right_cards, padding=12, style="Card.TFrame")
+        output_frame.pack(fill=BOTH, expand=True)
+        ttk.Label(output_frame, text="Extracted Text", style="CardHeading.TLabel").pack(anchor="w")
         scrollbar = Scrollbar(output_frame)
         scrollbar.pack(side=RIGHT, fill=Y)
-        self.output_text = Text(output_frame, height=18, wrap="word", yscrollcommand=scrollbar.set, font=("Consolas", 10), bg="#0f172a", fg="#e5e7eb", insertbackground="#e5e7eb", relief="flat")
-        self.output_text.pack(fill=BOTH, expand=True, pady=(4, 0))
+        self.output_text = Text(
+            output_frame,
+            height=18,
+            wrap="word",
+            yscrollcommand=scrollbar.set,
+            font=("Consolas", 10),
+            bg="#0f172a",
+            fg="#e5e7eb",
+            insertbackground="#e5e7eb",
+            relief="flat",
+            padx=8,
+            pady=8,
+        )
+        self.output_text.pack(fill=BOTH, expand=True, pady=(6, 0))
         scrollbar.config(command=self.output_text.yview)
+
+        # Info card
+        info_card = ttk.Frame(right_cards, padding=12, style="Card.TFrame")
+        info_card.pack(fill="x", pady=(8, 0))
+        ttk.Label(info_card, text="Session Info", style="CardHeading.TLabel").pack(anchor="w", pady=(0, 8))
+        self.info_source = ttk.Label(info_card, text="Source: Idle", style="Info.TLabel")
+        self.info_resolution = ttk.Label(info_card, text="Resolution: —", style="Info.TLabel")
+        self.info_roi = ttk.Label(info_card, text="ROI: none", style="Info.TLabel")
+        self.info_boxes = ttk.Label(info_card, text="Detections: 0", style="Info.TLabel")
+        self.info_source.pack(anchor="w")
+        self.info_resolution.pack(anchor="w")
+        self.info_roi.pack(anchor="w")
+        self.info_boxes.pack(anchor="w")
 
         self.status_var = ttk.Label(self.root, text="Ready", anchor="w", padding=(12, 6), style="Subtle.TLabel")
         self.status_var.pack(fill="x", side="bottom")
@@ -103,6 +152,14 @@ class OCRApp:
         self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
 
         self.set_status("Ready")
+        self.source_mode = "Idle"
+        self.box_count = 0
+
+        # Keyboard shortcuts
+        self.root.bind("<Control-o>", lambda _: self.load_image())
+        self.root.bind("<Control-r>", lambda _: self.run_ocr())
+        self.root.bind("<Control-q>", lambda _: self.root.quit())
+        self.root.bind("<space>", lambda _: self.capture_frame())
 
     # --------------------
     # UI helpers
@@ -115,6 +172,8 @@ class OCRApp:
             image = Image.open(path).convert("RGB")
             self.set_image(image)
             self.set_status(f"Loaded image: {path}")
+            self.source_mode = "Image"
+            self._update_info(resolution=image.size, roi=None, boxes=0)
         except Exception as exc:
             messagebox.showerror("Error", f"Failed to load image: {exc}")
             self.set_status("Failed to load image")
@@ -123,6 +182,7 @@ class OCRApp:
         self.current_image = image
         self.roi_start, self.roi_end = None, None
         self.refresh_canvas(image)
+        self._update_info(resolution=image.size, roi=None, boxes=self.box_count)
 
     def refresh_canvas(self, image: Image.Image, rectangles=None):
         if image is None:
@@ -170,6 +230,7 @@ class OCRApp:
         self.roi_end = (event.x, event.y)
         self.image_canvas.delete("roi")
         self._draw_roi(self.roi_start, self.roi_end)
+        self._update_info(resolution=self.current_image.size, roi=self._current_roi_rect(), boxes=self.box_count)
 
     def _draw_roi(self, start, end):
         x1, y1 = start
@@ -190,6 +251,8 @@ class OCRApp:
         self.video_thread = threading.Thread(target=self._camera_loop, daemon=True)
         self.video_thread.start()
         self.set_status("Camera started")
+        self.source_mode = "Camera"
+        self._update_info(resolution=None, roi=None, boxes=0)
 
     def _camera_loop(self):
         while self.video_running and self.video_capture and self.video_capture.isOpened():
@@ -200,6 +263,7 @@ class OCRApp:
             image = Image.fromarray(frame_rgb)
             self.current_image = image
             self.refresh_canvas(image)
+            self._update_info(resolution=image.size, roi=self._current_roi_rect(), boxes=self.box_count)
         if self.video_capture:
             self.video_capture.release()
 
@@ -208,6 +272,8 @@ class OCRApp:
         if self.video_capture:
             self.video_capture.release()
         self.set_status("Camera stopped")
+        self.source_mode = "Idle"
+        self._update_info(resolution=None, roi=None, boxes=0)
 
     def capture_frame(self):
         if self.current_image is None:
@@ -216,6 +282,7 @@ class OCRApp:
         self.stop_camera()
         messagebox.showinfo("Captured", "Current camera frame captured for OCR.")
         self.set_status("Frame captured and camera stopped")
+        self.source_mode = "Image"
 
     # --------------------
     # OCR
@@ -235,6 +302,8 @@ class OCRApp:
             scaled_rectangles = self._scale_boxes_to_display(rectangles, self.current_image.size)
             self.refresh_canvas(overlay_img, rectangles=scaled_rectangles)
             self.set_status(f"OCR complete ({len(rectangles)} boxes)")
+            self.box_count = len(rectangles)
+            self._update_info(resolution=self.current_image.size, roi=self._current_roi_rect(), boxes=self.box_count)
         except pytesseract.TesseractNotFoundError:
             messagebox.showerror("Tesseract Missing", "Tesseract executable not found. Please install it and set the PATH or update pytesseract.pytesseract.tesseract_cmd.")
             self.set_status("Tesseract executable not found")
@@ -328,6 +397,56 @@ class OCRApp:
 
     def set_status(self, text: str):
         self.status_var.config(text=text)
+
+    def copy_text(self):
+        content = self.output_text.get("1.0", END).strip()
+        if not content:
+            self.set_status("Nothing to copy")
+            return
+        self.root.clipboard_clear()
+        self.root.clipboard_append(content)
+        self.set_status("Text copied to clipboard")
+
+    def save_text(self):
+        content = self.output_text.get("1.0", END).strip()
+        if not content:
+            self.set_status("Nothing to save")
+            return
+        path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if not path:
+            return
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        self.set_status(f"Saved text to {path}")
+
+    def clear_roi(self):
+        self.roi_start, self.roi_end = None, None
+        self.image_canvas.delete("roi")
+        self.refresh_canvas(self.current_image)
+        self.set_status("ROI cleared")
+        self._update_info(resolution=self.current_image.size if self.current_image else None, roi=None, boxes=self.box_count)
+
+    def _current_roi_rect(self):
+        if not (self.roi_start and self.roi_end):
+            return None
+        x1, y1 = self.roi_start
+        x2, y2 = self.roi_end
+        x1, x2 = sorted([x1, x2])
+        y1, y2 = sorted([y1, y2])
+        return (x1, y1, x2, y2)
+
+    def _update_info(self, resolution, roi, boxes):
+        if resolution:
+            self.info_resolution.config(text=f"Resolution: {resolution[0]} x {resolution[1]}")
+        else:
+            self.info_resolution.config(text="Resolution: —")
+        if roi:
+            rx1, ry1, rx2, ry2 = roi
+            self.info_roi.config(text=f"ROI: {rx2 - rx1} x {ry2 - ry1}")
+        else:
+            self.info_roi.config(text="ROI: none")
+        self.info_source.config(text=f"Source: {self.source_mode}")
+        self.info_boxes.config(text=f"Detections: {boxes}")
 
 
 def main():

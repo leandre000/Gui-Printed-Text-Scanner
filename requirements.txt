@@ -1,5 +1,5 @@
 pytesseract
 opencv-python
 Pillow
-numpy
+numpy<2.0
 
